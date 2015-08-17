@@ -4,126 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Net.Sockets;
 
-namespace LogicAutomationController
+namespace Saleae
 {
-
-    public static class GlobalVariable
-    {
-        public static bool debug_mode = true;
-        public static bool demo_mode = false;
-    }
-
-    public class SocketMain
-    {
-        SocketAPI SAPI;
-
-        static void Main(string[] args)
-        {
-            SocketMain app = new SocketMain();
-            app.Run();
-        }
-
-        public void Run()
-        {
-            StringHelper.WriteLine("Logic automation controller\n");
-            StringHelper.WriteLine("enter host IP address, or press enter for localhost");
-            String host = Console.ReadLine();
-            if (host.Length == 0)
-                host = "127.0.0.1";
-            StringHelper.WriteLine("enter host port, or press enter for default ( 10429 )");
-            String port_str = Console.ReadLine();
-            if (port_str.Length == 0)
-                port_str = "10429";
-            int port = int.Parse(port_str);
-
-            StringHelper.WriteLine("Connecting...");
-            try
-            {
-                SAPI = new SocketAPI(host, port);
-            }
-            catch (Exception ex)
-            {
-                StringHelper.WriteLine("Error while connecting: " + ex.Message);
-                Console.ReadLine();
-                return;
-            }
-            StringHelper.WriteLine("Connected");
-
-            try
-            {
-                //////////////////////////////////////////////////////////////////////
-                ///******************Enter Function Commands Here*******************//
-                //////////////////////////////////////////////////////////////////////
-                //Note: Functions must be called using the created SocketAPI object SAPI
-                //SAPI.SetSampleRate(4000000);
-
-
-
-                if (GlobalVariable.demo_mode == true)
-                    SAPI.Demo();
-            }
-            catch (SaleaeSocketApiException socket_exception)
-            {
-                StringHelper.WriteLine("Socket Exception Thrown: " + socket_exception.Message);
-            }
-
-            while (true)
-            {
-                try
-                {
-                    StringHelper.WriteLine("Enter a string to xmit, q to exit.");
-                    String input = Console.ReadLine();
-                    if (input == "q")
-                    {
-                        return;
-                    }
-                    else if (input == "h")
-                    {
-                        StringHelper.WriteLine("Example scripts:");
-                        StringHelper.WriteLine("set_sample_rate, 12000000, 6000000");
-                        StringHelper.WriteLine("set_num_samples, 1000000");
-                        StringHelper.WriteLine("set_trigger, high, negedge, low, none,");
-                        StringHelper.WriteLine("capture_to_file, c:/test1.logicdata");
-
-                        continue;
-                    }
-                    else if (input == "test")
-                        SAPI.Test();
-                    else if (input == "demo")
-                        SAPI.Demo();
-                    else
-                    {
-                        StringHelper.WriteLine(SAPI.CustomCommand(input));
-                    }
-                }
-                catch (SaleaeSocketApiException socket_exception)
-                {
-                    StringHelper.WriteLine("Socket Exception Thrown: " + socket_exception.Message);
-                }
-            }
-
-        }
-    }
-
-    class SaleaeSocketApiException : Exception
-    {
-        public SaleaeSocketApiException()
-            : base()
-        {
-        }
-
-        public SaleaeSocketApiException(string message)
-            : base(message)
-        {
-        }
-
-        public SaleaeSocketApiException(string message, Exception inner_exception)
-            : base(message, inner_exception)
-        {
-        }
-
-    }
-
     public class SocketAPI
     {
         TcpClient Socket;
@@ -174,61 +56,25 @@ namespace LogicAutomationController
 
         private void WriteString(String str)
         {
-            byte[] data = str.toByteArray().Concat("\0".toByteArray()).ToArray();
+            byte[] data = ASCIIEncoding.ASCII.GetBytes(str + "\0");
 
             Stream.Write(data, 0, data.Length);
 
-            StringHelper.WriteLine("Wrote data: " + str);
         }
 
         private void GetResponse(ref String response)
         {
-            while ((String.IsNullOrEmpty(response)))
+            int rd;
+
+            while ((rd = Stream.ReadByte()) > 0)
             {
-                response += Stream.ReadString();
+                response += ASCIIEncoding.ASCII.GetString(new byte[] { (byte)rd} );
             }
-            StringHelper.WriteLine("Response: " + response);
 
             if (!(response.Substring(response.LastIndexOf('A')) == "ACK"))
                 throw new SaleaeSocketApiException();
         }
 
-        private void WaitForConsole()
-        {
-            StringHelper.WriteLine("Press Enter to Continue");
-            Console.ReadLine();
-        }
-
-        public void Demo()
-        {
-            StringHelper.WriteLine("Demo Mode Initiated");
-
-            Capture();
-            StopCapture();
-            IsProcessingComplete();
-            WaitForConsole();
-
-            StringHelper.WriteLine("Demo Complete");
-        }
-
-        public void Test()
-        {
-            ExportDataStruct ex_data_struct = new ExportDataStruct();
-            ex_data_struct.FileName = @"C:\Users\Charles\Desktop\test\temp";
-            ex_data_struct.SamplesRangeType = DataExportSampleRangeType.RangeAll;
-            ex_data_struct.ExportAllChannels = false;
-            ex_data_struct.DigitalChannelsToExport = new int[] { 0, 2 };
-            ex_data_struct.AnalogChannelsToExport = new int[] { 1 };
-            ex_data_struct.DataExportType = DataExportType.ExportCsv;
-            ex_data_struct.CsvDelimiterType = CsvDelimiterType.CsvTab;
-            ex_data_struct.CsvDensity = CsvDensity.CsvComplete;
-            ex_data_struct.CsvDisplayBase = CsvBase.CsvDecimal;
-            ex_data_struct.CsvIncludeHeaders = CsvHeadersType.CsvIncludesHeaders;
-            ex_data_struct.CsvOutputMode = CsvOutputMode.CsvOneColumnPerBit;
-            ex_data_struct.CsvTimestampType = CsvTimestampType.CsvSample;
-            //  ex_data_struct.AnalogFormat = AnalogOutputFormat.Voltage; This feature was not included in v1.1.31 and should not be used until 1.1.32 
-            ExportData(ex_data_struct);
-        }
 
         /// <summary>
         /// Give the Socket API a custom command
@@ -238,11 +84,11 @@ namespace LogicAutomationController
         public String CustomCommand(String export_command)
         {
             WriteString(export_command);
-
+            int rd;
             String response = "";
-            while ((String.IsNullOrEmpty(response)))
+            while ((rd = Stream.ReadByte()) > 0)
             {
-                response += Stream.ReadString();
+                response += ASCIIEncoding.ASCII.GetString(new byte[] { (byte)rd });
             }
 
             return response;
@@ -335,14 +181,17 @@ namespace LogicAutomationController
         /// Start capture and save when capture finishes
         /// </summary>
         /// <param name="file">File to save capture to</param>
-        public void CaptureToFile(String file)
+        /// <param name="async">Asyncronous capture</param>
+        public void CaptureToFile(String file, bool async)
         {
             String export_command = capture_to_file_cmd + ", ";
             export_command += file;
             WriteString(export_command);
-
-            String response = "";
-            GetResponse(ref response);
+            if (!async)
+            {
+                String response = "";
+                GetResponse(ref response);
+            }
         }
 
         /// <summary>
@@ -569,13 +418,17 @@ namespace LogicAutomationController
         /// <summary>
         /// Start device capture
         /// </summary>
-        public void Capture()
+        /// <param name="async">Asynronous capture</param>
+        public void Capture(bool async)
         {
             String export_command = capture_cmd;
             WriteString(export_command);
 
-            String response = "";
-            GetResponse(ref response);
+            if (!async)
+            {
+                String response = "";
+                GetResponse(ref response);
+            }
         }
 
         /// <summary>
@@ -919,55 +772,5 @@ namespace LogicAutomationController
         public int index;
     }
 
-    public static class StringHelper
-    {
-
-        public static byte[] toByteArray(this String str)
-        {
-            int count = str.Length;
-            char[] char_array = str.ToCharArray();
-            byte[] array = new byte[count];
-            for (int i = 0; i < count; ++i)
-            {
-                array[i] = (byte)char_array[i];
-
-            }
-            return array;
-        }
-
-        public static String ReadString(this NetworkStream stream)
-        {
-
-            int max_length = 128;
-            byte[] buffer = new byte[max_length];
-            String str = "";
-            int bytes_read = 0;
-            while (true)
-            {
-                bytes_read = stream.Read(buffer, 0, max_length);
-
-                for (int i = 0; i < bytes_read; ++i)
-                {
-                    str += (char)buffer[i];
-                }
-
-                if (bytes_read < max_length)
-                    break;
-            }
-            return str;
-
-        }
-
-        public static void WriteLine(String str)
-        {
-            if (GlobalVariable.debug_mode == true)
-                Console.WriteLine(str);
-        }
-
-        public static void Write(String str)
-        {
-            if (GlobalVariable.debug_mode == true)
-                Console.Write(str);
-        }
-    }
+    
 }
