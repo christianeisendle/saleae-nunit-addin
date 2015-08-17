@@ -5,6 +5,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogicAutomationController",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Testbench", "Testbench\Testbench.csproj", "{D09E1756-8F16-4183-B1CC-19B319BC1D36}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SaleaeAddin", "SaleaeAddin\SaleaeAddin.csproj", "{0FA1B75A-3B9E-46F1-87B1-40229241285D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -35,6 +37,16 @@ Global
 		{D09E1756-8F16-4183-B1CC-19B319BC1D36}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{D09E1756-8F16-4183-B1CC-19B319BC1D36}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{D09E1756-8F16-4183-B1CC-19B319BC1D36}.Release|x86.ActiveCfg = Release|Any CPU
+		{0FA1B75A-3B9E-46F1-87B1-40229241285D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FA1B75A-3B9E-46F1-87B1-40229241285D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0FA1B75A-3B9E-46F1-87B1-40229241285D}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{0FA1B75A-3B9E-46F1-87B1-40229241285D}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{0FA1B75A-3B9E-46F1-87B1-40229241285D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0FA1B75A-3B9E-46F1-87B1-40229241285D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0FA1B75A-3B9E-46F1-87B1-40229241285D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0FA1B75A-3B9E-46F1-87B1-40229241285D}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{0FA1B75A-3B9E-46F1-87B1-40229241285D}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{0FA1B75A-3B9E-46F1-87B1-40229241285D}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
