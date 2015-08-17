@@ -11,8 +11,6 @@ namespace LogicAutomationController
     {
         public static bool debug_mode = true;
         public static bool demo_mode = false;
-
-
     }
 
     public class SocketMain
@@ -57,7 +55,7 @@ namespace LogicAutomationController
                 ///******************Enter Function Commands Here*******************//
                 //////////////////////////////////////////////////////////////////////
                 //Note: Functions must be called using the created SocketAPI object SAPI
-                SAPI.SetSampleRate(4000000);
+                //SAPI.SetSampleRate(4000000);
 
 
 
@@ -82,9 +80,9 @@ namespace LogicAutomationController
                     else if (input == "h")
                     {
                         StringHelper.WriteLine("Example scripts:");
-                        StringHelper.WriteLine("set_sample_rate, 24000000");
+                        StringHelper.WriteLine("set_sample_rate, 12000000, 6000000");
                         StringHelper.WriteLine("set_num_samples, 1000000");
-                        StringHelper.WriteLine("set_trigger, high, low, low, low, low, low, negedge,");
+                        StringHelper.WriteLine("set_trigger, high, negedge, low, none,");
                         StringHelper.WriteLine("capture_to_file, c:/test1.logicdata");
 
                         continue;
@@ -103,7 +101,7 @@ namespace LogicAutomationController
                     StringHelper.WriteLine("Socket Exception Thrown: " + socket_exception.Message);
                 }
             }
-             
+
         }
     }
 
@@ -137,25 +135,35 @@ namespace LogicAutomationController
         const String set_trigger_cmd = "SET_TRIGGER";
         const String set_num_samples_cmd = "SET_NUM_SAMPLES";
         const String set_sample_rate_cmd = "SET_SAMPLE_RATE";
+        const String set_capture_seconds_cmd = "SET_CAPTURE_SECONDS";
         const String capture_to_file_cmd = "CAPTURE_TO_FILE";
         const String save_to_file_cmd = "SAVE_TO_FILE";
         const String load_from_file_cmd = "LOAD_FROM_FILE";
         const String export_data_cmd = "EXPORT_DATA";
 
+        const String get_all_sample_rates_cmd = "GET_ALL_SAMPLE_RATES";
         const String get_analyzers_cmd = "GET_ANALYZERS";
         const String export_analyzer_cmd = "EXPORT_ANALYZER";
         const String get_inputs_cmd = "GET_INPUTS";
         const String capture_cmd = "CAPTURE";
+        const String stop_capture_cmd = "STOP_CAPTURE";
         const String get_capture_pretrigger_buffer_size_cmd = "GET_CAPTURE_PRETRIGGER_BUFFER_SIZE";
         const String set_capture_pretrigger_buffer_size_cmd = "SET_CAPTURE_PRETRIGGER_BUFFER_SIZE";
         const String get_connected_devices_cmd = "GET_CONNECTED_DEVICES";
         const String select_active_device_cmd = "SELECT_ACTIVE_DEVICE";
 
-        const String get_active_logic16_channels_cmd = "GET_ACTIVE_LOGIC16_CHANNELS";
-        const String set_active_logic16_channels_cmd = "SET_ACTIVE_LOGIC16_CHANNELS";
-        const String reset_active_logic16_channels_cmd = "RESET_ACTIVE_LOGIC16_CHANNELS";
+        const String get_active_channels_cmd = "GET_ACTIVE_CHANNELS";
+        const String set_active_channels_cmd = "SET_ACTIVE_CHANNELS";
+        const String reset_active_channels_cmd = "RESET_ACTIVE_CHANNELS";
 
-        public SocketAPI( String host_str = "127.0.0.1", int port_input = 10429 )
+        const String set_performance_cmd = "SET_PERFORMANCE";
+        const String get_performance_cmd = "GET_PERFORMANCE";
+        const String is_processing_complete_cmd = "IS_PROCESSING_COMPLETE";
+        const String is_analyzer_complete_cmd = "IS_ANALYZER_COMPLETE";
+
+        const String close_all_tabs_cmd = "CLOSE_ALL_TABS";
+
+        public SocketAPI(String host_str = "127.0.0.1", int port_input = 10429)
         {
             this.port = port_input;
             this.host = host_str;
@@ -194,103 +202,32 @@ namespace LogicAutomationController
         public void Demo()
         {
             StringHelper.WriteLine("Demo Mode Initiated");
-            GetConnectedDevices();
-            WaitForConsole();
-            SelectActiveDevice(1);
-            WaitForConsole();
-            SetNumSamples(2000000);
-            WaitForConsole();
-            SetSampleRate(16000000);
-            WaitForConsole();
+
             Capture();
+            StopCapture();
+            IsProcessingComplete();
             WaitForConsole();
-            GetInputs();
-            WaitForConsole();
-            Trigger[] trigger = { Trigger.High, Trigger.Posedge, Trigger.None, Trigger.Low, Trigger.High, Trigger.High, Trigger.None, Trigger.None };
-            SetTrigger( trigger ); //will fail if Logic16 device
-            WaitForConsole();
-            SetCapturePretriggerBufferSize(1000000);
-            WaitForConsole();
-            Capture();
+
             StringHelper.WriteLine("Demo Complete");
         }
 
         public void Test()
         {
-            GetConnectedDevices();
-            SelectActiveDevice(1);
-            int[] inputs = GetInputs();
-            if( inputs != null)
-            {
-                for (int i = 0; i < inputs.Length; ++i)
-                    StringHelper.Write( inputs[i].ToString() );
-            }
-            GetConnectedDevices();
-            Capture();
-            {
-                ExportDataStruct ex_data_struct = new ExportDataStruct();
-                ex_data_struct.FileName = @"C:\Users\Chris\Desktop\test";
-                ex_data_struct.SamplesRangeType = DataExportSampleRangeType.RangeAll;
-                ex_data_struct.ExportAllChannels = true;
-                ex_data_struct.DataExportType = DataExportType.ExportVcd;
-                ExportData(ex_data_struct);
-            }
-            {
-                ExportDataStruct ex_data_struct = new ExportDataStruct();
-                ex_data_struct.FileName = @"C:\Users\Chris\Desktop\test";
-                ex_data_struct.SamplesRangeType = DataExportSampleRangeType.RangeTimes;
-                ex_data_struct.StartingTime = 0;
-                ex_data_struct.EndingTime = 0.000145;
-                ex_data_struct.ExportAllChannels = false;
-                ex_data_struct.ChannelsToExport = new int[] { 1, 4, 7 };
-                ex_data_struct.DataExportType = DataExportType.ExportCsv;
-                ex_data_struct.CsvDelimiterType = CsvDelimiterType.CsvTab;
-                ex_data_struct.CsvDensity = CsvDensity.CsvComplete;
-                ex_data_struct.CsvDisplayBase = CsvBase.CsvDecimal;
-                ex_data_struct.CsvIncludeHeaders = CsvHeadersType.CsvNoHeaders;
-                ex_data_struct.CsvOutputMode = CsvOutputMode.CsvOneColumnPerBit;
-                ex_data_struct.CsvTimestampType = CsvTimestampType.CsvSample;
-                ExportData(ex_data_struct);
-            }
-            Trigger[] trigger1 = { Trigger.High, Trigger.Low, Trigger.Low, Trigger.Low, Trigger.High, Trigger.High, Trigger.High, Trigger.High };
-            SetTrigger( trigger1 );
-            SelectActiveDevice(2);
-            GetConnectedDevices();
-            ResetActiveLogic16Channels();
-            Trigger[] trigger2 = { Trigger.High, Trigger.Low, Trigger.Low, Trigger.Low, Trigger.High, Trigger.High, Trigger.High, Trigger.High, Trigger.High, Trigger.Low, Trigger.Low, Trigger.Low, Trigger.High, Trigger.High, Trigger.High, Trigger.High };
-            SetTrigger( trigger2 );
-            SetNumSamples(2000000);
-            SetSampleRate(16000000);
-            Trigger[] trigger_reset = { Trigger.None, Trigger.None, Trigger.None, Trigger.None, Trigger.None, Trigger.None, Trigger.None, Trigger.None, Trigger.None, Trigger.None, Trigger.None, Trigger.None, Trigger.None, Trigger.None, Trigger.None, Trigger.None };
-            SetTrigger(trigger_reset);   
-            CaptureToFile( @"C:\Users\Chris\Desktop\test.logicdata" );
-            LoadFromFile(@"C:\Users\Chris\Desktop\test.logicdata");
-            Capture();
-            SaveToFile(@"C:\Users\Chris\Desktop\test.logicdata");
-            ResetActiveLogic16Channels();
-            LoadFromFile( @"C:\Users\Chris\Desktop\test.logicdata" );
-            
-            GetAnalyzers();
-            //ExportAnalyzers( 1 , @"c:\Users\Chris\Desktop\test.txt", true );
-
-            SetCapturePretriggerBufferSize(1000000);
-            StringHelper.WriteLine( GetCapturePretriggerBufferSize().ToString() );
-            SetCapturePretriggerBufferSize(10000000);
-            ResetActiveLogic16Channels();
-            int[] channels = GetActiveLogic16Channels();
-            if (channels != null)
-            {
-                for (int i = 0; i < channels.Length; ++i)
-                    StringHelper.Write( channels[i].ToString() );
-            }
-            int[] active_channels = { 1, 4, 6, 10, 13 };
-            SetActiveLogic16Channels( active_channels );
-            int[] channels_2 = GetActiveLogic16Channels();
-             if (channels_2 != null)
-            {
-                for (int i = 0; i < channels_2.Length; ++i)
-                    StringHelper.Write( channels_2[i].ToString() );
-            }
+            ExportDataStruct ex_data_struct = new ExportDataStruct();
+            ex_data_struct.FileName = @"C:\Users\Charles\Desktop\test\temp";
+            ex_data_struct.SamplesRangeType = DataExportSampleRangeType.RangeAll;
+            ex_data_struct.ExportAllChannels = false;
+            ex_data_struct.DigitalChannelsToExport = new int[] { 0, 2 };
+            ex_data_struct.AnalogChannelsToExport = new int[] { 1 };
+            ex_data_struct.DataExportType = DataExportType.ExportCsv;
+            ex_data_struct.CsvDelimiterType = CsvDelimiterType.CsvTab;
+            ex_data_struct.CsvDensity = CsvDensity.CsvComplete;
+            ex_data_struct.CsvDisplayBase = CsvBase.CsvDecimal;
+            ex_data_struct.CsvIncludeHeaders = CsvHeadersType.CsvIncludesHeaders;
+            ex_data_struct.CsvOutputMode = CsvOutputMode.CsvOneColumnPerBit;
+            ex_data_struct.CsvTimestampType = CsvTimestampType.CsvSample;
+            //  ex_data_struct.AnalogFormat = AnalogOutputFormat.Voltage; This feature was not included in v1.1.31 and should not be used until 1.1.32 
+            ExportData(ex_data_struct);
         }
 
         /// <summary>
@@ -353,13 +290,41 @@ namespace LogicAutomationController
         }
 
         /// <summary>
+        /// Set number of seconds to capture for
+        /// </summary>
+        /// <param name="capture_seconds">Number of seconds to capture</param>
+        public void SetCaptureSeconds(double seconds)
+        {
+            String export_command = set_capture_seconds_cmd + ", ";
+            export_command += seconds.ToString();
+            WriteString(export_command);
+
+            String response = "";
+            GetResponse(ref response);
+        }
+
+        /// <summary>
+        /// Closes all currently open tabs.
+        /// </summary>
+        public void CloseAllTabs()
+        {
+            String export_command = close_all_tabs_cmd;
+            WriteString(export_command);
+
+            String response = "";
+            GetResponse(ref response);
+        }
+
+        /// <summary>
         /// Set the sample rate for capture
         /// </summary>
         /// <param name="sample_rate">Sample rate to set</param>
-        public void SetSampleRate(int sample_rate)
+        public void SetSampleRate(SampleRate sample_rate)
         {
             String export_command = set_sample_rate_cmd + ", ";
-            export_command += sample_rate.ToString();
+            export_command += sample_rate.DigitalSampleRate.ToString();
+            export_command += ", " + sample_rate.AnalogSampleRate.ToString();
+
             WriteString(export_command);
 
             String response = "";
@@ -413,12 +378,12 @@ namespace LogicAutomationController
         {
             //channels
             const String all_channels_option = ", ALL_CHANNELS";
-            const String specific_channels_option = ", SPECIFIC_CHANNELS";
+            const String digital_channels_option = ", DIGITAL_CHANNELS";
+            const String analog_channels_option = ", ANALOG_CHANNELS";
 
             //time span
             const String all_time_option = ", ALL_TIME";
             const String time_span_option = ", TIME_SPAN";
-            const String timing_markers_option = ", TIMING_MARKERS";
 
             const String csv_option = ", CSV";
             const String headers_option = ", HEADERS";
@@ -440,7 +405,10 @@ namespace LogicAutomationController
             const String each_sample_option = ", EACH_SAMPLE";
             const String on_change_option = ", ON_CHANGE";
 
+            const String voltage_option = ", VOLTAGE";
+            const String raw_adc_option = ", ADC";
             const String vcd_option = ", VCD";
+            const String matlab_option = ", MATLAB";
 
 
             String export_command = export_data_cmd;
@@ -450,11 +418,28 @@ namespace LogicAutomationController
                 export_command += all_channels_option;
             else
             {
-                export_command += specific_channels_option;
-                foreach (int channel in export_data_struct.ChannelsToExport)
-                    export_command += ", " + channel.ToString();
+                if (export_data_struct.DigitalChannelsToExport.Length > 0)
+                {
+                    export_command += digital_channels_option;
+                    foreach (int channel in export_data_struct.DigitalChannelsToExport)
+                        export_command += ", " + channel.ToString();
+                }
+
+                if (export_data_struct.AnalogChannelsToExport.Length > 0)
+                {
+                    export_command += analog_channels_option;
+                    foreach (int channel in export_data_struct.AnalogChannelsToExport)
+                        export_command += ", " + channel.ToString();
+                }
             }
 
+            if (export_data_struct.ExportAllChannels || (export_data_struct.AnalogChannelsToExport != null && export_data_struct.AnalogChannelsToExport.Length > 0))
+            {
+                if (export_data_struct.AnalogFormat == AnalogOutputFormat.Voltage)
+                    export_command += voltage_option;
+                else if (export_data_struct.AnalogFormat == AnalogOutputFormat.ADC)
+                    export_command += raw_adc_option;
+            }
 
             if (export_data_struct.SamplesRangeType == DataExportSampleRangeType.RangeAll)
                 export_command += all_time_option;
@@ -464,9 +449,6 @@ namespace LogicAutomationController
                 export_command += ", " + export_data_struct.StartingTime;
                 export_command += ", " + export_data_struct.EndingTime;
             }
-            else if (export_data_struct.SamplesRangeType == DataExportSampleRangeType.RangeMarkers)
-                export_command += timing_markers_option;
-
 
             if (export_data_struct.DataExportType == DataExportType.ExportCsv)
             {
@@ -529,6 +511,10 @@ namespace LogicAutomationController
             {
                 export_command += vcd_option;
             }
+            else if (export_data_struct.DataExportType == DataExportType.ExportMatlab)
+            {
+                export_command += matlab_option;
+            }
 
 
             WriteString(export_command);
@@ -581,25 +567,6 @@ namespace LogicAutomationController
         }
 
         /// <summary>
-        /// Get current pin inputs on device
-        /// </summary>
-        /// <returns>list of ints of boolean value 1 or 0</returns>
-        public int[] GetInputs()
-        {
-            String export_command = get_inputs_cmd;
-            WriteString(export_command);
-
-            String response = "";
-            GetResponse(ref response);
-            String[] input_string = response.Split('\n');
-            int[] inputs = new int[input_string[0].Length];
-            for (int i = 0; i < input_string[0].Length; ++i)
-                inputs[i] = input_string[0][i] - 48; //convert from ascii to int val
-
-            return inputs;
-        }
-
-        /// <summary>
         /// Start device capture
         /// </summary>
         public void Capture()
@@ -610,6 +577,20 @@ namespace LogicAutomationController
             String response = "";
             GetResponse(ref response);
         }
+
+        /// <summary>
+        /// Stop the current capture
+        /// </summary>
+
+        public void StopCapture()
+        {
+            String export_command = stop_capture_cmd;
+            WriteString(export_command);
+
+            String response = "";
+            GetResponse(ref response);
+        }
+
 
         /// <summary>
         /// Get size of pre-trigger buffer
@@ -654,14 +635,14 @@ namespace LogicAutomationController
             GetResponse(ref response);
             String[] response_strings = response.Split('\n');
             ConnectedDevices[] devices = new ConnectedDevices[response_strings.Length - 1];
-            for( int i = 0; i < devices.Length; ++i )
+            for (int i = 0; i < devices.Length; ++i)
             {
                 String[] current_device = response_strings[i].Split(',');
                 devices[i].type = current_device[2];
                 devices[i].name = current_device[1];
                 devices[i].index = int.Parse(current_device[0]);
                 devices[i].device_id = Convert.ToInt32(current_device[3].Substring(1), 16);
-                if( current_device.Length > 4 )
+                if (current_device.Length > 4)
                     devices[i].is_active = true;
                 else
                     devices[i].is_active = false;
@@ -685,36 +666,163 @@ namespace LogicAutomationController
         }
 
         /// <summary>
-        /// Get active channels for logic 16 device
+        /// Set the performance option
         /// </summary>
-        /// <returns>array of active channel numbers</returns>
-        public int[] GetActiveLogic16Channels()
+        public void SetPerformanceOption(PerformanceOption performance)
         {
-            String export_command = get_active_logic16_channels_cmd;
+            String export_command = set_performance_cmd + ", ";
+            export_command += performance.ToString("D");
+            WriteString(export_command);
+
+            String response = "";
+            GetResponse(ref response);
+        }
+
+        /// <summary>
+        /// Get the performance option currently selected.
+        /// </summary>
+        /// <returns>A PerformanceOption enum</returns>
+        public PerformanceOption GetPerformanceOption()
+        {
+            String export_command = get_performance_cmd;
             WriteString(export_command);
 
             String response = "";
             GetResponse(ref response);
 
-            String[] input_string = response.Split('\n');
-            String[] channels_string = input_string[0].Split(',');
-            int[] channels = new int[channels_string.Length];
+            PerformanceOption selected_option = (PerformanceOption)Convert.ToInt32(response.Split(',')[0]);
+            return selected_option;
+        }
 
-            for (int i = 0; i < channels_string.Length; ++i)
-                channels[i] = int.Parse(channels_string[i]);
 
-            return channels;
+        /// <summary>
+        /// Get whether or not the software is done processing data. You must wait for data to be finished processing before you can export/save. 
+        /// </summary>
+        /// <returns>A boolean indicating if processing is complete</returns>
+
+        public bool IsProcessingComplete()
+        {
+            String export_command = is_processing_complete_cmd;
+            WriteString(export_command);
+
+            String response = "";
+            GetResponse(ref response);
+
+            bool complete_processing = Convert.ToBoolean(response.Split('\n')[0]);
+            return complete_processing;
         }
 
         /// <summary>
-        /// Set the active channels for a logic 16 device
+        /// Get whether or not the software is done processing data. You must wait for data to be finished processing before you can export/save. 
+        /// </summary>
+        /// <returns>A boolean indicating if processing is complete</returns>
+
+        public bool IsAnalyzerProcessingComplete(int index)
+        {
+            String export_command = is_analyzer_complete_cmd;
+            export_command += ", " + Convert.ToString(index);
+            WriteString(export_command);
+
+            String response = "";
+            GetResponse(ref response);
+
+            bool complete_processing = Convert.ToBoolean(response.Split('\n')[0]);
+            return complete_processing;
+        }
+
+
+        /// <summary>
+        /// Get the currently available sample rates for the selected performance options
+        /// </summary>
+        /// <returns>Array of sample rate combinations available</returns>
+        public List<SampleRate> GetAvailableSampleRates()
+        {
+            WriteString(get_all_sample_rates_cmd);
+            String response = "";
+            GetResponse(ref response);
+
+            List<SampleRate> sample_rates = new List<SampleRate>();
+            String[] new_line = { "\n" };
+            String[] responses = response.Split(new_line, StringSplitOptions.RemoveEmptyEntries);
+
+            for (int i = 0; i < responses.Length - 1; i++)
+            {
+                String[] split_sample_rate = responses[i].Split(',');
+                if (split_sample_rate.Length != 2)
+                {
+                    sample_rates.Clear();
+                    return sample_rates;
+                }
+
+                SampleRate new_sample_rate;
+                new_sample_rate.DigitalSampleRate = Convert.ToInt32(split_sample_rate[0].Trim());
+                new_sample_rate.AnalogSampleRate = Convert.ToInt32(split_sample_rate[1].Trim());
+                sample_rates.Add(new_sample_rate);
+            }
+
+            return sample_rates;
+        }
+
+        /// <summary>
+        /// Get active channels for devices Logic16, Logic 8(second gen), Logic 8 pro, Logic 16 pro
+        /// </summary>
+        /// <returns>array of active channel numbers</returns>
+        public void GetActiveChannels(List<int> digital_channels, List<int> analog_channels)
+        {
+            String export_command = get_active_channels_cmd;
+            WriteString(export_command);
+
+            String response = "";
+            GetResponse(ref response);
+
+            digital_channels.Clear();
+            analog_channels.Clear();
+
+            String[] input_string = response.Split('\n');
+            String[] channels_string = input_string[0].Split(',');
+
+            bool add_to_digital_channel_list = true;
+            for (int i = 0; i < channels_string.Length; ++i)
+            {
+                if (channels_string[i] == "digital_channels")
+                {
+                    add_to_digital_channel_list = true;
+                    continue;
+                }
+                else if (channels_string[i] == "analog_channels")
+                {
+                    add_to_digital_channel_list = false;
+                    continue;
+                }
+
+                if (add_to_digital_channel_list)
+                    digital_channels.Add(int.Parse(channels_string[i]));
+                else
+                    analog_channels.Add(int.Parse(channels_string[i]));
+            }
+
+        }
+
+        /// <summary>
+        /// Set the active channels for devices Logic16, Logic 8(second gen), Logic 8 pro, Logic 16 pro
         /// </summary>
         /// <param name="channels">array of channels to be active: 0-15</param>
-        public void SetActiveLogic16Channels(int[] channels)
+        public void SetActiveChannels(int[] digital_channels = null, int[] analog_channels = null)
         {
-            String export_command = set_active_logic16_channels_cmd;
-            for (int i = 0; i < channels.Length; ++i)
-                export_command += ", " + channels[i].ToString();
+
+            String export_command = set_active_channels_cmd;
+            if (digital_channels != null)
+            {
+                export_command += ", " + "digital_channels";
+                for (int i = 0; i < digital_channels.Length; ++i)
+                    export_command += ", " + digital_channels[i].ToString();
+            }
+            if (analog_channels != null)
+            {
+                export_command += ", " + "analog_channels";
+                for (int i = 0; i < analog_channels.Length; ++i)
+                    export_command += ", " + analog_channels[i].ToString();
+            }
             WriteString(export_command);
 
             String response = "";
@@ -724,9 +832,9 @@ namespace LogicAutomationController
         /// <summary>
         /// Reset to default active logic 16 channels (0-15)
         /// </summary>
-        public void ResetActiveLogic16Channels()
+        public void ResetActiveChannels()
         {
-            String export_command = reset_active_logic16_channels_cmd;
+            String export_command = reset_active_channels_cmd;
             WriteString(export_command);
 
             String response = "";
@@ -746,21 +854,24 @@ namespace LogicAutomationController
     //SetTrigger
     public enum Trigger { None, High, Low, Negedge, Posedge };
 
+    public enum PerformanceOption { Full = 100, Half = 50, Third = 33, Quarter = 25, Low = 20 };
 
     //Export Data
-    public enum DataExportSampleRangeType { RangeAll, RangeMarkers, RangeTimes };
-    public enum DataExportType { ExportBinary, ExportCsv, ExportVcd };
+    public enum DataExportSampleRangeType { RangeAll, RangeTimes };
+    public enum DataExportType { ExportBinary, ExportCsv, ExportVcd, ExportMatlab };
 
     public enum CsvHeadersType { CsvIncludesHeaders, CsvNoHeaders };
     public enum CsvDelimiterType { CsvComma, CsvTab };
     public enum CsvOutputMode { CsvSingleNumber, CsvOneColumnPerBit };
     public enum CsvTimestampType { CsvTime, CsvSample };
-    public enum CsvBase { CsvNA, CsvBinary, CsvDecimal, CsvHexadecimal, CsvAscii };
+    public enum CsvBase { CsvBinary, CsvDecimal, CsvHexadecimal, CsvAscii };
     public enum CsvDensity { CsvTransition, CsvComplete };
 
     public enum BinaryOutputMode { BinaryEverySample, BinaryEveryChange };
     public enum BinaryBitShifting { BinaryOriginalBitPositions, BinaryShiftRight };
     public enum BinaryOutputWordSize { Binary8Bit, Binary16Bit, Binary32Bit, Binary64Bit };
+
+    public enum AnalogOutputFormat { Voltage, ADC };
 
     public struct ExportDataStruct
     {
@@ -768,10 +879,11 @@ namespace LogicAutomationController
 
         //Channels
         public bool ExportAllChannels;
-        public int[] ChannelsToExport;
-        
+        public int[] DigitalChannelsToExport;
+        public int[] AnalogChannelsToExport;
+
         //Time Range
-        public DataExportSampleRangeType SamplesRangeType; //{ RangeAll, RangeMarkers, RangeTimes }
+        public DataExportSampleRangeType SamplesRangeType; //{ RangeAll, RangeTimes }
         public double StartingTime;
         public double EndingTime;
 
@@ -783,7 +895,7 @@ namespace LogicAutomationController
         public CsvDelimiterType CsvDelimiterType;//{ CsvComma, CsvTab }
         public CsvOutputMode CsvOutputMode;//{ CsvSingleNumber, CsvOneColumnPerBit }
         public CsvTimestampType CsvTimestampType;//{ CsvTime, CsvSample }
-        public CsvBase CsvDisplayBase;//{ CsvNA, CsvBinary, CsvDecimal, CsvHexadecimal, CsvAscii }
+        public CsvBase CsvDisplayBase;//{ CsvBinary, CsvDecimal, CsvHexadecimal, CsvAscii }
         public CsvDensity CsvDensity;//{ CsvTransition, CsvComplete }
 
         //Type: Binary
@@ -791,6 +903,14 @@ namespace LogicAutomationController
         public BinaryBitShifting BinaryBitShifting;//{ BinaryOriginalBitPositions, BinaryShiftRight }
         public BinaryOutputWordSize BinaryOutputWordSize;//{ Binary8Bit, Binary16Bit, Binary32Bit, Binary64Bit }
 
+        //Type: Analog Value
+        public AnalogOutputFormat AnalogFormat; //This feature needs v1.1.32+ 
+    }
+
+    public struct SampleRate
+    {
+        public int AnalogSampleRate;
+        public int DigitalSampleRate;
     }
 
     public struct Analyzer
