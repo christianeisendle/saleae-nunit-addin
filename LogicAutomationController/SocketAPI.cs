@@ -76,14 +76,19 @@ namespace Saleae
         private void GetResponse(ref String response)
         {
             int rd;
+            byte[] buffer = new byte[100];
 
-            while ((rd = Stream.ReadByte()) > 0)
+
+            rd = Stream.Read(buffer, 0, buffer.Length);
+            if (rd < 3)
             {
-                response += ASCIIEncoding.ASCII.GetString(new byte[] { (byte)rd} );
+                throw new SocketApiException("Invalid data received");
             }
+            response += ASCIIEncoding.ASCII.GetString(buffer, 0, rd);
+
 
             if (!(response.Substring(response.LastIndexOf('A')) == "ACK"))
-                throw new SaleaeSocketApiException();
+                throw new SocketApiException();
         }
 
 
@@ -193,7 +198,7 @@ namespace Saleae
         /// </summary>
         /// <param name="file">File to save capture to</param>
         /// <param name="async">Asyncronous capture</param>
-        public void CaptureToFile(String file, bool async)
+        public void CaptureToFile(String file, bool async = false)
         {
             String export_command = capture_to_file_cmd + ", ";
             export_command += file;
@@ -430,7 +435,7 @@ namespace Saleae
         /// Start device capture
         /// </summary>
         /// <param name="async">Asynronous capture</param>
-        public void Capture(bool async)
+        public void Capture(bool async = false)
         {
             String export_command = capture_cmd;
             WriteString(export_command);

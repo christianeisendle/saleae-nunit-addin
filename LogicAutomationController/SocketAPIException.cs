@@ -5,19 +5,19 @@ using System.Text;
 
 namespace Saleae
 {
-    public class SaleaeSocketApiException : Exception
+    public class SocketApiException : Exception
     {
-        public SaleaeSocketApiException()
+        public SocketApiException()
             : base()
         {
         }
 
-        public SaleaeSocketApiException(string message)
+        public SocketApiException(string message)
             : base(message)
         {
         }
 
-        public SaleaeSocketApiException(string message, Exception inner_exception)
+        public SocketApiException(string message, Exception inner_exception)
             : base(message, inner_exception)
         {
         }
