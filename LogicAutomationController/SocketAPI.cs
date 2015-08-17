@@ -50,8 +50,19 @@ namespace Saleae
             this.port = port_input;
             this.host = host_str;
 
+            
+        }
+
+        public void Open()
+        {
             Socket = new TcpClient(host, port);
             Stream = Socket.GetStream();
+        }
+
+        public void Close()
+        {
+            Stream.Close();
+            Socket.Close();
         }
 
         private void WriteString(String str)
